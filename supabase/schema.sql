@@ -28,9 +28,11 @@ create table if not exists public.comments (
   id uuid primary key default gen_random_uuid(),
   post_id uuid references public.posts(id) on delete cascade,
   author_id uuid references public.profiles(id) on delete cascade,
+  parent_id uuid references public.comments(id) on delete cascade,
   body text not null check (char_length(body) between 1 and 1000),
   created_at timestamptz not null default now()
 );
+create index if not exists idx_comments_parent_id on public.comments(parent_id);
 create table if not exists public.follows (
   follower_id uuid references public.profiles(id) on delete cascade,
   following_id uuid references public.profiles(id) on delete cascade,

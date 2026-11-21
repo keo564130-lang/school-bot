@@ -26,3 +26,12 @@ create policy "conversations delete" on public.conversations for delete using (p
 
 comment on column public.profiles.privacy_messages is 'Настройки приватности сообщений: everyone = все могут писать, request = только по запросу';
 comment on column public.messages.image_url is 'URL изображения в сообщении';
+
+
+-- 6. Добавление ответов на комментарии
+alter table public.comments 
+add column if not exists parent_id uuid references public.comments(id) on delete cascade;
+
+create index if not exists idx_comments_parent_id on public.comments(parent_id);
+
+comment on column public.comments.parent_id is 'ID родительского комментария для ответов';
