@@ -52,6 +52,7 @@ create table if not exists public.messages (
   conversation_id uuid references public.conversations(id) on delete cascade,
   sender_id uuid references public.profiles(id) on delete cascade,
   body text not null check (char_length(body) between 1 and 5000),
+  image_url text,
   created_at timestamptz not null default now()
 );
 
@@ -84,7 +85,9 @@ create policy "likes own write" on public.post_likes for all using (auth.uid() =
 drop policy if exists "comments readable" on public.comments;
 create policy "comments readable" on public.comments for select using (true);
 drop policy if exists "comments own write" on public.comments;
-create policy "comments own write" on public.comments for all using (auth.uid() = author_id) with check (auth.uid() = author_id);
+create policy "comments own write" on public.comments for insert with check (auth.uid() = author_id);
+drop policy if exists "comments own delete" on public.comments;
+create policy "comments own delete" on public.comments for delete using (auth.uid() = author_id);
 
 drop policy if exists "follows readable" on public.follows;
 create policy "follows readable" on public.follows for select using (true);
@@ -103,10 +106,14 @@ drop policy if exists "conversations members" on public.conversations;
 create policy "conversations members" on public.conversations for select using (public.is_conversation_member(id));
 drop policy if exists "conversations create" on public.conversations;
 create policy "conversations create" on public.conversations for insert with check (auth.uid() is not null);
+drop policy if exists "conversations delete" on public.conversations;
+create policy "conversations delete" on public.conversations for delete using (public.is_conversation_member(id));
 drop policy if exists "messages members" on public.messages;
 create policy "messages members" on public.messages for select using (public.is_conversation_member(conversation_id));
 drop policy if exists "messages own insert" on public.messages;
 create policy "messages own insert" on public.messages for insert with check (auth.uid() = sender_id and public.is_conversation_member(conversation_id));
+drop policy if exists "messages own delete" on public.messages;
+create policy "messages own delete" on public.messages for delete using (auth.uid() = sender_id);
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public
